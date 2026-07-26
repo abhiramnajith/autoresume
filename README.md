@@ -20,9 +20,55 @@ waiting forever on a weekly limit.
 > Regenerate it from the repo root with [`vhs`](https://github.com/charmbracelet/vhs):
 > `vhs demo/autoresume.tape`.
 
+## Requirements
+
+- **Python 3.8+** — standard library only, no third-party dependencies.
+- **macOS or Linux** — uses a pseudo-terminal (CI runs on both).
+
 ## Install
 
-    pip install -e .
+### Recommended: isolated install on your PATH
+
+Give the tool its own virtual environment and symlink its entry point onto your
+`PATH` (this is what `pipx` does, done by hand — no extra tooling needed):
+
+```sh
+# 1. get the code
+git clone https://github.com/abhiramnajith/autoresume.git
+cd autoresume
+
+# 2. isolated venv + install
+python3 -m venv ~/.local/share/autoresume/venv
+~/.local/share/autoresume/venv/bin/pip install .
+
+# 3. put it on your PATH
+mkdir -p ~/.local/bin
+ln -sf ~/.local/share/autoresume/venv/bin/autoresume ~/.local/bin/autoresume
+
+# 4. verify
+autoresume --help
+```
+
+If `~/.local/bin` isn't already on your `PATH`, add this to your shell profile
+(`~/.zshrc` / `~/.bashrc`):
+
+```sh
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+### With pipx
+
+```sh
+pipx install git+https://github.com/abhiramnajith/autoresume.git
+```
+
+### Run without installing
+
+```sh
+git clone https://github.com/abhiramnajith/autoresume.git
+cd autoresume
+python3 -m autoresume -- claude
+```
 
 ## Usage
 
@@ -36,6 +82,32 @@ Options:
 - `--reset-buffer S`     seconds to wait past the parsed reset time (default 45)
 - `--resume-message MSG` text sent to resume (default `continue`)
 - `--log-file PATH`      event log (default `~/.autoresume/autoresume.log`)
+
+## Maintenance
+
+**Update** to the latest version:
+
+```sh
+# recommended install
+cd autoresume && git pull
+~/.local/share/autoresume/venv/bin/pip install --force-reinstall .
+
+# pipx
+pipx install --force git+https://github.com/abhiramnajith/autoresume.git
+```
+
+**Uninstall:**
+
+```sh
+# recommended install
+rm -rf ~/.local/share/autoresume ~/.local/bin/autoresume
+
+# pipx
+pipx uninstall autoresume
+```
+
+The event log lives at `~/.autoresume/autoresume.log` (override with
+`--log-file`); delete it any time.
 
 ## How it works
 
