@@ -55,8 +55,10 @@ def test_detect_limit_returns_event_with_reset():
 
 
 def test_detect_limit_unknown_time_has_none_reset():
+    # A reset clause is present (so it is a real banner) but the time can't be
+    # parsed -> detect, and fall back to polling (reset_at is None).
     now = datetime(2026, 7, 26, 14, 0)
-    event = detect_limit("usage limit reached", now)
+    event = detect_limit("usage limit reached — resets shortly", now)
     assert event is not None
     assert event.reset_at is None
 
@@ -85,12 +87,12 @@ def test_parse_absolute_time_ignores_timezone_suffix():
 
 def test_detect_weekly_limit_reordered_phrasing():
     now = datetime(2026, 7, 26, 14, 0)
-    assert detect_limit("You've reached your weekly limit.", now) is not None
+    assert detect_limit("You've reached your weekly limit · resets 9am", now) is not None
 
 
 def test_detect_weekly_limit_keyword():
     now = datetime(2026, 7, 26, 14, 0)
-    assert detect_limit("weekly limit reached", now) is not None
+    assert detect_limit("weekly limit reached, resets 9am", now) is not None
 
 
 # Real Claude Code banner captured from a live session (2026-07-26):
@@ -104,6 +106,35 @@ def test_detect_real_session_limit_banner():
     assert event.reset_at == datetime(2026, 7, 26, 11, 0)
 
 
-def test_detect_session_limit_keyword():
-    now = datetime(2026, 7, 26, 7, 0)
-    assert detect_limit("You've hit your session limit", now) is not None
+# --- False-positive regression tests (the detector must NOT fire on prose
+# that merely mentions limits; a real banner has the limit phrase and its
+# reset clause close together on one line). ---
+
+def test_ignores_scattered_limit_and_reset_mentions():
+    now = datetime(2026, 7, 26, 14, 0)
+    prose = (
+        "autoresume watches Claude's output for the usage limit banner and "
+        "then injects continue on your behalf. It forwards your keyboard and "
+        "the rendered screen back and forth transparently for the entire "
+        "duration of the session, which keeps everything feeling exactly like "
+        "running the command directly. Eventually, once the rolling window "
+        "resets at 3pm, the work just continues on its own."
+    )
+    assert detect_limit(prose, now) is None
+
+
+def test_ignores_bare_limit_phrase_without_reset():
+    now = datetime(2026, 7, 26, 14, 0)
+    assert detect_limit("You've hit your session limit", now) is None
+    assert detect_limit("weekly limit reached", now) is None
+
+
+def test_ignores_conversation_about_the_feature():
+    now = datetime(2026, 7, 26, 14, 0)
+    blob = (
+        "How it works: when a usage limit is reached, autoresume waits and "
+        "sends continue. It stops after --max-resumes to avoid waiting forever "
+        "on a weekly limit. The reset time is parsed from the banner; if the "
+        "window resets at 3pm it fires then."
+    )
+    assert detect_limit(blob, now) is None
