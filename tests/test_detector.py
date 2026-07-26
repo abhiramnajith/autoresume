@@ -64,3 +64,30 @@ def test_detect_limit_unknown_time_has_none_reset():
 def test_detect_limit_returns_none_when_no_banner():
     now = datetime(2026, 7, 26, 14, 0)
     assert detect_limit("everything is fine", now) is None
+
+
+def test_parse_24_hour_time():
+    now = datetime(2026, 7, 26, 14, 0)
+    assert parse_reset_time("resets at 15:00", now) == datetime(2026, 7, 26, 15, 0)
+
+
+def test_parse_24_hour_time_rolls_to_next_day():
+    now = datetime(2026, 7, 26, 16, 0)
+    assert parse_reset_time("resets 09:30", now) == datetime(2026, 7, 27, 9, 30)
+
+
+def test_parse_absolute_time_ignores_timezone_suffix():
+    now = datetime(2026, 7, 26, 14, 0)
+    assert parse_reset_time("resets 3pm (America/New_York)", now) == datetime(
+        2026, 7, 26, 15, 0
+    )
+
+
+def test_detect_weekly_limit_reordered_phrasing():
+    now = datetime(2026, 7, 26, 14, 0)
+    assert detect_limit("You've reached your weekly limit.", now) is not None
+
+
+def test_detect_weekly_limit_keyword():
+    now = datetime(2026, 7, 26, 14, 0)
+    assert detect_limit("weekly limit reached", now) is not None
