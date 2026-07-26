@@ -91,3 +91,19 @@ def test_detect_weekly_limit_reordered_phrasing():
 def test_detect_weekly_limit_keyword():
     now = datetime(2026, 7, 26, 14, 0)
     assert detect_limit("weekly limit reached", now) is not None
+
+
+# Real Claude Code banner captured from a live session (2026-07-26):
+#   "You've hit your session limit · resets 11am (Asia/Calcutta)"
+# Pinned here so the detector stays matched to real output, not assumed wording.
+def test_detect_real_session_limit_banner():
+    now = datetime(2026, 7, 26, 7, 0)
+    banner = "You've hit your session limit · resets 11am (Asia/Calcutta)"
+    event = detect_limit(banner, now)
+    assert event is not None
+    assert event.reset_at == datetime(2026, 7, 26, 11, 0)
+
+
+def test_detect_session_limit_keyword():
+    now = datetime(2026, 7, 26, 7, 0)
+    assert detect_limit("You've hit your session limit", now) is not None

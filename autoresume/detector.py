@@ -15,7 +15,9 @@ def strip_ansi(text: str) -> str:
 
 
 _LIMIT_RE = re.compile(
-    r"limit reached|usage limit|weekly limit|reached your (?:\w+\s+){0,3}limit",
+    r"limit reached"
+    r"|(?:usage|session|weekly|daily|rate) limit"
+    r"|(?:hit|reached|exceeded) your (?:\w+\s+){0,3}limit",
     re.IGNORECASE,
 )
 _REL_RE = re.compile(
