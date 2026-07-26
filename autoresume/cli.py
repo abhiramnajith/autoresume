@@ -2,7 +2,6 @@ import argparse
 import datetime
 import os
 import sys
-import time
 from pathlib import Path
 
 from .resumer import Resumer
@@ -61,15 +60,16 @@ def main(argv=None):
             announce=announce,
             log=log,
             now=datetime.datetime.now,
-            sleep=time.sleep,
             max_resumes=args.max_resumes,
             poll_interval_s=args.poll_interval * 60,
             reset_buffer_s=args.reset_buffer,
             resume_message=args.resume_message,
         )
 
-    log("start: {}".format(" ".join(command)))
-    code = pty_wrapper.run(command, make_resumer)
-    log("exit {}".format(code))
-    log_file.close()
-    return code
+    try:
+        log("start: {}".format(" ".join(command)))
+        code = pty_wrapper.run(command, make_resumer)
+        log("exit {}".format(code))
+        return code
+    finally:
+        log_file.close()

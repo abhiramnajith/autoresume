@@ -19,7 +19,6 @@ def test_wrapper_injects_continue_on_limit():
             announce=lambda m: None,
             log=lambda m: None,
             now=datetime.datetime.now,
-            sleep=lambda s: time.sleep(min(s, 0.05)),
             max_resumes=1,
             poll_interval_s=1,
             reset_buffer_s=0,

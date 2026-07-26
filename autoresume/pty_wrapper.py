@@ -38,7 +38,10 @@ def run(argv, make_resumer, *, stdin_fd=None, stdout_fd=None):
 
     def send(text):
         data = text.encode() if isinstance(text, str) else text
-        os.write(master_fd, data)
+        try:
+            os.write(master_fd, data)
+        except OSError:
+            pass
 
     resumer = make_resumer(send)
 
@@ -69,8 +72,9 @@ def run(argv, make_resumer, *, stdin_fd=None, stdout_fd=None):
     exit_code = 1
     try:
         while True:
+            timeout = resumer.seconds_until_wake()  # None -> block until I/O
             try:
-                rlist, _, _ = select.select([stdin_fd, master_fd], [], [])
+                rlist, _, _ = select.select([stdin_fd, master_fd], [], [], timeout)
             except (select.error, InterruptedError):
                 continue
 
@@ -81,7 +85,10 @@ def run(argv, make_resumer, *, stdin_fd=None, stdout_fd=None):
                     data = b""
                 if not data:
                     break
-                os.write(stdout_fd, data)
+                try:
+                    os.write(stdout_fd, data)
+                except OSError:
+                    break
                 resumer.feed(data.decode(errors="replace"))
 
             if stdin_fd in rlist:
@@ -91,10 +98,20 @@ def run(argv, make_resumer, *, stdin_fd=None, stdout_fd=None):
                     break
                 if not data:
                     break
-                os.write(master_fd, data)
+                if b"\x03" in data and resumer.seconds_until_wake() is not None:
+                    resumer.cancel_wait()  # Ctrl-C aborts a pending wait
+                try:
+                    os.write(master_fd, data)
+                except OSError:
+                    break
+
+            resumer.maybe_resume()
     finally:
-        if old_attr is not None:
-            termios.tcsetattr(stdin_fd, termios.TCSADRAIN, old_attr)
+        try:
+            if old_attr is not None:
+                termios.tcsetattr(stdin_fd, termios.TCSADRAIN, old_attr)
+        except termios.error:
+            pass
         try:
             os.close(master_fd)
         except OSError:
