@@ -1,5 +1,8 @@
 # autoresume
 
+[![CI](https://github.com/abhiramnajith/autoresume/actions/workflows/ci.yml/badge.svg)](https://github.com/abhiramnajith/autoresume/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org/)
+
 Auto-resume an unattended interactive Claude Code session after a usage-limit
 reset. Wrap your normal command:
 
@@ -9,6 +12,13 @@ When Claude prints a usage-limit banner ("… limit reached ∙ resets 3pm"),
 `autoresume` parses the reset time, waits, and sends `continue` so the session
 picks up where it left off. It stops after `--max-resumes` (default 5) to avoid
 waiting forever on a weekly limit.
+
+![autoresume demo](demo/autoresume.gif)
+
+> The demo above uses a scripted stand-in for `claude` (`demo/bin/claude`) and a
+> short `--reset-buffer` so the wait is watchable — no real usage limit needed.
+> Regenerate it from the repo root with [`vhs`](https://github.com/charmbracelet/vhs):
+> `vhs demo/autoresume.tape`.
 
 ## Install
 

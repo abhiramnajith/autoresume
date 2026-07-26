@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Demo-only stand-in for the real `claude` CLI, so the recorded GIF can show
+# `autoresume -- claude` while running the scripted session (no real usage
+# limit needed). Not installed anywhere; only on PATH inside demo/autoresume.tape.
+exec python3 "$(cd "$(dirname "$0")/.." && pwd)/fake-claude-session.py"
