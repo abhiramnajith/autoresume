@@ -13,7 +13,7 @@ dependencies = []
 autoresume = "autoresume.cli:main"
 
 [project.optional-dependencies]
-dev = ["pytest>=7"]
+dev = ["pytest>=9.1.1"]
 
 [tool.setuptools]
 packages = ["autoresume"]
