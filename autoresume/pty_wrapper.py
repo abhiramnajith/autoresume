@@ -66,6 +66,7 @@ def run(argv, make_resumer, *, stdin_fd=None, stdout_fd=None):
     except termios.error:
         pass  # stdin is not a tty (e.g. a pipe under test)
 
+    exit_code = 1
     try:
         while True:
             try:
@@ -84,14 +85,25 @@ def run(argv, make_resumer, *, stdin_fd=None, stdout_fd=None):
                 resumer.feed(data.decode(errors="replace"))
 
             if stdin_fd in rlist:
-                data = os.read(stdin_fd, 65536)
+                try:
+                    data = os.read(stdin_fd, 65536)
+                except OSError:
+                    break
                 if not data:
                     break
                 os.write(master_fd, data)
     finally:
         if old_attr is not None:
             termios.tcsetattr(stdin_fd, termios.TCSADRAIN, old_attr)
-        os.close(master_fd)
+        try:
+            os.close(master_fd)
+        except OSError:
+            pass
+        try:
+            _, status = os.waitpid(pid, 0)
+        except ChildProcessError:
+            pass
+        else:
+            exit_code = _exit_code(status)
 
-    _, status = os.waitpid(pid, 0)
-    return _exit_code(status)
+    return exit_code
