@@ -78,7 +78,7 @@ def test_stops_at_max_resumes():
 def test_unknown_reset_time_uses_poll_interval():
     rec = Recorder(datetime(2026, 7, 26, 14, 0))
     r = make_resumer(rec, poll_interval_s=900)
-    r.feed("usage limit reached")  # no parseable time
+    r.feed("usage limit reached — resets shortly")  # banner, but time unparseable
     assert abs(r.seconds_until_wake() - 900) < 2
     assert rec.sent == []
     rec.advance(900)

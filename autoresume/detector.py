@@ -16,10 +16,19 @@ def strip_ansi(text: str) -> str:
 
 _LIMIT_RE = re.compile(
     r"limit reached"
-    r"|(?:usage|session|weekly|daily|rate) limit"
+    r"|(?:usage|session|weekly|daily|rate) limit(?:\s+(?:reached|exceeded))?"
     r"|(?:hit|reached|exceeded) your (?:\w+\s+){0,3}limit",
     re.IGNORECASE,
 )
+# A real banner attaches its reset clause DIRECTLY to the limit phrase, with
+# only separators in between, e.g. "session limit · resets 11am". Requiring the
+# reset clause immediately after the phrase (no intervening words) rejects prose
+# that merely discusses limits, e.g. "a weekly limit. The window resets at 3pm".
+# See detect_limit().
+_AFTER_LIMIT_RE = re.compile(
+    r"[\s·∙•|,:.\-–—/()]*(?:resets\b|reset\s+(?:at|in)\b)", re.IGNORECASE
+)
+_RESET_WINDOW = 120
 _REL_RE = re.compile(
     r"reset[s]?\s+in\s+(\d+)\s*(hour|hr|minute|min)s?", re.IGNORECASE
 )
@@ -69,7 +78,16 @@ def _next_occurrence(now, hour, minute):
 
 
 def detect_limit(text: str, now: datetime) -> Optional[LimitEvent]:
-    m = _LIMIT_RE.search(text)
-    if not m:
-        return None
-    return LimitEvent(reset_at=parse_reset_time(text, now), raw=m.group(0))
+    # A real banner attaches its reset clause directly to the limit phrase
+    # ("session limit · resets 11am"). Only fire when a reset clause immediately
+    # follows the phrase (separators but no words between) — so prose that merely
+    # mentions limits, or a limit phrase and a "resets" from an unrelated
+    # sentence, does not false-trigger.
+    for m in _LIMIT_RE.finditer(text):
+        if _AFTER_LIMIT_RE.match(text, m.end()):
+            window = text[m.start():m.end() + _RESET_WINDOW]
+            return LimitEvent(
+                reset_at=parse_reset_time(window, now),
+                raw=window.strip()[:160],
+            )
+    return None
