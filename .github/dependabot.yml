@@ -1,0 +1,17 @@
+version: 2
+updates:
+  # Keep pinned GitHub Actions patched (Dependabot reads the `# vX` comments).
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci
+
+  # Track Python deps (dev-only today: pytest).
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: deps
