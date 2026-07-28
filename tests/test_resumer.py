@@ -111,3 +111,42 @@ def test_cancel_wait_prevents_resume():
     assert rec.sent == []  # cancelled, never sent
     assert any("cancelled" in a.lower() for a in rec.announced)
     assert r.cancel_wait() is False  # nothing pending now
+
+
+def test_polls_do_not_spend_the_resume_budget():
+    """Unknown reset times must not burn max_resumes (the old bug: 5 polls
+    exhausted the budget in 5 * poll_interval and gave up before the reset)."""
+    rec = Recorder(datetime(2026, 7, 26, 14, 0))
+    r = make_resumer(rec, max_resumes=5, max_polls=10, poll_interval_s=1800)
+    for _ in range(10):
+        r.feed("usage limit reached — resets shortly")
+        rec.advance(r.seconds_until_wake())
+        r.maybe_resume()
+        r.feed("still limited")  # no banner in this chunk: re-arms detection
+    assert len(rec.sent) == 10          # polled the full 10 times (5 hours)
+    assert r.resume_count == 0          # ...without spending a resume
+    assert r.poll_count == 10
+
+
+def test_poll_budget_is_capped():
+    rec = Recorder(datetime(2026, 7, 26, 14, 0))
+    r = make_resumer(rec, max_polls=3, poll_interval_s=1800)
+    for _ in range(5):
+        r.feed("usage limit reached — resets shortly")
+        rec.advance(r.seconds_until_wake() or 1800)
+        r.maybe_resume()
+        r.feed("still limited")
+    assert len(rec.sent) == 3
+    assert any("without a reset" in a for a in rec.announced)
+
+
+def test_poll_budget_resets_after_productive_gap():
+    rec = Recorder(datetime(2026, 7, 26, 14, 0))
+    r = make_resumer(rec, max_polls=2, poll_interval_s=1800)
+    r.feed("usage limit reached — resets shortly")
+    rec.advance(r.seconds_until_wake())
+    r.maybe_resume()
+    r.feed("working normally now")
+    rec.advance(6 * 3600)  # long productive stretch
+    r.feed("usage limit reached — resets shortly")
+    assert r.poll_count == 1  # fresh budget, not 2
