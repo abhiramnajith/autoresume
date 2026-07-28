@@ -16,9 +16,12 @@ def build_parser():
     )
     p.add_argument("--max-resumes", type=int, default=5,
                    help="stop after this many auto-resumes (default 5)")
-    p.add_argument("--poll-interval", type=int, default=15,
-                   help="minutes between retries when the reset time is unknown "
-                        "(default 15)")
+    p.add_argument("--poll-window", type=float, default=5.0,
+                   help="hours to keep retrying when the reset time is unknown "
+                        "(default 5)")
+    p.add_argument("--max-polls", type=int, default=10,
+                   help="retries spread evenly across --poll-window (default 10, "
+                        "i.e. every 30 minutes for 5 hours)")
     p.add_argument("--reset-buffer", type=int, default=45,
                    help="seconds to wait past the parsed reset time (default 45)")
     p.add_argument("--resume-message", default="continue",
@@ -61,7 +64,8 @@ def main(argv=None):
             log=log,
             now=datetime.datetime.now,
             max_resumes=args.max_resumes,
-            poll_interval_s=args.poll_interval * 60,
+            max_polls=args.max_polls,
+            poll_interval_s=args.poll_window * 3600 / max(1, args.max_polls),
             reset_buffer_s=args.reset_buffer,
             resume_message=args.resume_message,
         )
