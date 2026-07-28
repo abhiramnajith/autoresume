@@ -77,8 +77,10 @@ python3 -m autoresume -- claude
 Options:
 
 - `--max-resumes N`      stop after N auto-resumes (default 5)
-- `--poll-interval M`    minutes between retries when the reset time can't be
-                         parsed (default 15)
+- `--poll-window H`      hours to keep retrying when the reset time can't be
+                         parsed (default 5)
+- `--max-polls N`        retries spread evenly across `--poll-window`
+                         (default 10, i.e. every 30 minutes for 5 hours)
 - `--reset-buffer S`     seconds to wait past the parsed reset time (default 45)
 - `--resume-message MSG` text sent to resume (default `continue`)
 - `--log-file PATH`      event log (default `~/.autoresume/autoresume.log`)
@@ -115,6 +117,15 @@ The event log lives at `~/.autoresume/autoresume.log` (override with
 keyboard and its screen transparently. In the background it strips ANSI from the
 output, watches for the limit banner, and injects the resume message at the
 reset time. Everything is Python standard library — no dependencies.
+
+Two kinds of waits, with separate budgets:
+
+- **Reset time known** — sleeps until that time (plus `--reset-buffer`) and
+  spends one of `--max-resumes`.
+- **Reset time unknown** — retries blind every `--poll-window / --max-polls`
+  (30 minutes by default) and spends one *poll*, never a resume. After
+  `--max-polls` tries without a reset it leaves the session idle. A long
+  productive stretch between limits starts a fresh poll budget.
 
 ## Development
 
