@@ -76,6 +76,7 @@ python3 -m autoresume -- claude
 
 Options:
 
+- `--version`            print the installed version and exit
 - `--max-resumes N`      stop after N auto-resumes (default 5)
 - `--poll-window H`      hours to keep retrying when the reset time can't be
                          parsed (default 5)

@@ -4,6 +4,7 @@ import os
 import sys
 from pathlib import Path
 
+from . import __version__
 from .resumer import Resumer
 from . import pty_wrapper
 
@@ -14,6 +15,8 @@ def build_parser():
         description="Wrap an interactive Claude Code session and auto-resume it "
         "after a usage-limit reset. Usage: autoresume [opts] -- claude [args]",
     )
+    p.add_argument("--version", action="version",
+                   version="autoresume {}".format(__version__))
     p.add_argument("--max-resumes", type=int, default=5,
                    help="stop after this many auto-resumes (default 5)")
     p.add_argument("--poll-window", type=float, default=5.0,
